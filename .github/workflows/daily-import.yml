@@ -1,0 +1,65 @@
+name: daily-import
+
+# Importa todo dia as pré-listas novas do banco do 1º ano para o Inventra.
+# 05:00 UTC = 02:00 em Brasília (UTC-3, sem horário de verão). O GitHub pode atrasar o início em
+# alguns minutos nos horários de pico. Agendamento só roda a partir da branch padrão (main).
+# Para rodar na hora: aba Actions > daily-import > Run workflow (use "dry_run" para só simular).
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Simular: executa tudo e desfaz a gravação'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Duas execuções ao mesmo tempo não fazem mal (o RPA tem trava no banco), mas a segunda só atrasaria.
+concurrency:
+  group: daily-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Host, banco e usuário também ficam em Secrets: o repositório é público e o GitHub mascara
+      # nos logs qualquer valor que seja um secret.
+      SRC_DB_HOST: ${{ secrets.SRC_DB_HOST }}
+      SRC_DB_PORT: ${{ secrets.SRC_DB_PORT }}
+      SRC_DB_NAME: ${{ secrets.SRC_DB_NAME }}
+      SRC_DB_USER: ${{ secrets.SRC_DB_USER }}
+      SRC_DB_PASSWORD: ${{ secrets.SRC_DB_PASSWORD }}
+      SRC_DB_SSLMODE: ${{ secrets.SRC_DB_SSLMODE }}
+      DST_DB_HOST: ${{ secrets.DST_DB_HOST }}
+      DST_DB_PORT: ${{ secrets.DST_DB_PORT }}
+      DST_DB_NAME: ${{ secrets.DST_DB_NAME }}
+      DST_DB_USER: ${{ secrets.DST_DB_USER }}
+      DST_DB_PASSWORD: ${{ secrets.DST_DB_PASSWORD }}
+      DST_DB_SSLMODE: ${{ secrets.DST_DB_SSLMODE }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install .
+      - name: Importar pré-listas
+        run: |
+          args=()
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          set +e
+          rpa-pre-lista "${args[@]}"
+          code=$?
+          # 2 = concluiu, mas houve itens rejeitados (fornecedor ou produto ainda não cadastrado no Inventra)
+          if [ "$code" -eq 2 ]; then
+            echo "::warning title=Itens rejeitados::Há itens sem correspondência no Inventra. Veja os ids e motivos no log acima e cadastre o que falta; a próxima execução importa as listas ignoradas."
+            exit 0
+          fi
+          exit "$code"
