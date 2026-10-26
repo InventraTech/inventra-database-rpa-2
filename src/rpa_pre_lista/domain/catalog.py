@@ -17,7 +17,7 @@ def normalize_name(value: str | None) -> str:
 
 @dataclass(frozen=True)
 class Catalog:
-    """Fornecedores, produtos e cozinhas do Inventra; traduz os itens do 1º ano para os ids do destino."""
+    """Fornecedores, produtos e cozinhas do Inventra; traduz o 1º ano para os ids do destino."""
 
     suppliers: dict[str, int]
     products: dict[str, tuple[int, ...]]

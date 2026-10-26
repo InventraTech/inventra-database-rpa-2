@@ -15,7 +15,7 @@ class PostgresPreListTarget:
     """Grava as pré-listas no banco do Inventra (tb_pre_list e tb_pre_list_item).
 
     O id da pré-lista no 1º ano fica em tb_pre_list.id_source (único): é o que torna a carga
-    idempotente. A cozinha vem de pre_lista.id_kitchen, coluna que o 1º ano acrescentou no banco deles.
+    idempotente. A cozinha vem de pre_lista.id_kitchen, coluna que o 1º ano acrescentou ao banco.
     A conexão deve estar em autocommit: cada `save` abre a própria transação.
     """
 
@@ -58,7 +58,8 @@ class PostgresPreListTarget:
         try:
             with self._conn.transaction(force_rollback=self._dry_run), self._conn.cursor() as cur:
                 id_pre_list = cur.execute(
-                    "INSERT INTO tb_pre_list (list_date, id_source, id_kitchen) VALUES (%s, %s, %s) "
+                    "INSERT INTO tb_pre_list (list_date, id_source, id_kitchen) "
+                    "VALUES (%s, %s, %s) "
                     "RETURNING id_pre_list",
                     (pre_lista.dt_lista, pre_lista.id_pre_lista, pre_lista.id_kitchen),
                 ).fetchone()[0]

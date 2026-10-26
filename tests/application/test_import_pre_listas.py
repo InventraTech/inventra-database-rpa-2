@@ -149,4 +149,5 @@ def test_list_with_missing_or_unknown_kitchen_is_skipped_and_reported(id_kitchen
         None,
         RejectReason.KITCHEN_NOT_FOUND,
     )
-    assert "Itens rejeitados:       0" in summary.lines()  # a lista inteira foi rejeitada, não um item
+    # a lista inteira foi rejeitada, não um item
+    assert "Itens rejeitados:       0" in summary.lines()

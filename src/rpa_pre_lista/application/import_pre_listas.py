@@ -34,7 +34,8 @@ class ImportPreListas:
         catalog = self._target.load_catalog()
         done = self._target.imported_ids()
         log.info(
-            "Destino: %d fornecedores, %d nomes de produto, %d cozinhas, %d pré-listas já importadas",
+            "Destino: %d fornecedores, %d nomes de produto, %d cozinhas, "
+            "%d pré-listas já importadas",
             len(catalog.suppliers),
             len(catalog.products),
             len(catalog.kitchens),
