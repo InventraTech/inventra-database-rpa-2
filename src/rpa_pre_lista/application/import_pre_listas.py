@@ -34,9 +34,10 @@ class ImportPreListas:
         catalog = self._target.load_catalog()
         done = self._target.imported_ids()
         log.info(
-            "Destino: %d fornecedores, %d nomes de produto, %d pré-listas já importadas",
+            "Destino: %d fornecedores, %d nomes de produto, %d cozinhas, %d pré-listas já importadas",
             len(catalog.suppliers),
             len(catalog.products),
+            len(catalog.kitchens),
             len(done),
         )
 
@@ -50,6 +51,18 @@ class ImportPreListas:
         return summary
 
     def _import_one(self, catalog: Catalog, pre_lista: PreLista, summary: ImportSummary) -> None:
+        if not catalog.has_kitchen(pre_lista.id_kitchen):
+            summary.rejections.append(
+                Rejection(pre_lista.id_pre_lista, None, RejectReason.KITCHEN_NOT_FOUND)
+            )
+            summary.lists_skipped += 1
+            log.warning(
+                "Pré-lista #%d ignorada: cozinha %s não existe no Inventra",
+                pre_lista.id_pre_lista,
+                pre_lista.id_kitchen,
+            )
+            return
+
         resolved = []
         rejected = []
         for item in pre_lista.items:

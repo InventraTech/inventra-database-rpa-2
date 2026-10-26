@@ -7,7 +7,7 @@ import psycopg
 from ..domain.models import PreLista, SourceItem
 
 _QUERY = """
-SELECT p.id_pre_lista, p.dt_lista, i.id_item_lista,
+SELECT p.id_pre_lista, p.dt_lista, p.id_kitchen, i.id_item_lista,
        f.cnpj, f.nome_juridico, pr.nome, i.qtd
 FROM pre_lista p
 JOIN item_pre_lista i ON i.fk_pre_lista = p.id_pre_lista
@@ -30,15 +30,15 @@ class PostgresPreListaSource:
         with self._conn.cursor(name="pre_lista_stream") as cur:
             cur.itersize = self._fetch_size
             cur.execute(_QUERY, {"since": since, "skip": sorted(skip)})
-            for (id_pre_lista, dt_lista), rows in groupby(cur, key=lambda r: (r[0], r[1])):
+            for (id_pre_lista, dt_lista, id_kitchen), rows in groupby(cur, key=lambda r: r[:3]):
                 items = [
                     SourceItem(
-                        id_item_lista=r[2],
-                        supplier_cnpj=r[3],
-                        supplier_name=r[4],
-                        product_name=r[5],
-                        quantity=r[6],
+                        id_item_lista=r[3],
+                        supplier_cnpj=r[4],
+                        supplier_name=r[5],
+                        product_name=r[6],
+                        quantity=r[7],
                     )
                     for r in rows
                 ]
-                yield PreLista(id_pre_lista, dt_lista, items)
+                yield PreLista(id_pre_lista, dt_lista, items, id_kitchen)

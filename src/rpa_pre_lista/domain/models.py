@@ -7,6 +7,7 @@ class RejectReason(StrEnum):
     SUPPLIER_NOT_FOUND = "SUPPLIER_NOT_FOUND"
     PRODUCT_NOT_FOUND = "PRODUCT_NOT_FOUND"
     PRODUCT_AMBIGUOUS = "PRODUCT_AMBIGUOUS"
+    KITCHEN_NOT_FOUND = "KITCHEN_NOT_FOUND"
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ class PreLista:
     id_pre_lista: int
     dt_lista: date
     items: list[SourceItem] = field(default_factory=list)
+    id_kitchen: int | None = None
 
 
 @dataclass(frozen=True)
@@ -35,5 +37,5 @@ class ResolvedItem:
 @dataclass(frozen=True)
 class Rejection:
     id_pre_lista: int
-    item: SourceItem
+    item: SourceItem | None  # None quando a pré-lista inteira é rejeitada
     reason: RejectReason

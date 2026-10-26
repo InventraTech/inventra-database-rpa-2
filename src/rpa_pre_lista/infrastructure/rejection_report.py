@@ -16,15 +16,12 @@ def write_rejections(directory: Path, rejections: list[Rejection]) -> Path | Non
             ["id_pre_lista", "id_item_lista", "cnpj", "fornecedor", "produto", "qtd", "motivo"]
         )
         for r in rejections:
-            writer.writerow(
-                [
-                    r.id_pre_lista,
-                    r.item.id_item_lista,
-                    r.item.supplier_cnpj,
-                    r.item.supplier_name,
-                    r.item.product_name,
-                    r.item.quantity,
-                    r.reason.value,
-                ]
+            item = r.item  # None quando a pré-lista inteira foi rejeitada: colunas do item vazias
+            item_cols = (
+                [item.id_item_lista, item.supplier_cnpj, item.supplier_name]
+                + [item.product_name, item.quantity]
+                if item
+                else [""] * 5
             )
+            writer.writerow([r.id_pre_lista, *item_cols, r.reason.value])
     return path

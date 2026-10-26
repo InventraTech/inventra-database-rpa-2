@@ -40,6 +40,7 @@ flowchart LR
 |---|---|
 | `pre_lista.id_pre_lista` | `tb_pre_list.id_source` (único; controla a duplicidade) |
 | `pre_lista.dt_lista` | `tb_pre_list.list_date` |
+| `pre_lista.id_kitchen` | `tb_pre_list.id_kitchen` (precisa existir em `tb_kitchen`) |
 | `item_pre_lista` | `tb_pre_list_item` (uma linha por item) |
 | `fornecedor.cnpj` | `tb_supplier.cnpj` (só dígitos) → `tb_pre_list_item.id_supplier` |
 | `produto.nome` | `tb_product.name` (sem acento, caixa ou espaços duplicados) → `id_product` |
@@ -47,7 +48,15 @@ flowchart LR
 
 Nome de produto repetido no Inventra é desempatado pelo vínculo em `tb_product_supplier`; se continuar ambíguo, o item é rejeitado. Fornecedores e produtos precisam existir no Inventra: o RPA não os cria.
 
-As tabelas vêm da migration `V016__pre_list.sql` do repositório `inventra-database-2`, que precisa estar aplicada no destino.
+As tabelas vêm das migrations `V016`, `V017` e `V018` (`pre_list`, `id_source` e `id_kitchen`) do repositório `inventra-database-2`, que precisam estar aplicadas no destino.
+
+**Cozinha:** o banco do 1º ano não tem cozinha, então a tabela `pre_lista` de lá ganhou a coluna `id_kitchen INTEGER` (sem FK), preenchida no dataload deles com o id de uma cozinha que já existe em `tb_kitchen`:
+
+```sql
+ALTER TABLE pre_lista ADD COLUMN id_kitchen INTEGER;
+```
+
+Pré-lista com `id_kitchen` nulo ou inexistente em `tb_kitchen` é ignorada inteira (motivo `KITCHEN_NOT_FOUND` no CSV de rejeitados, com as colunas do item vazias), para nunca gravar uma cozinha inventada.
 
 ## Comportamento
 

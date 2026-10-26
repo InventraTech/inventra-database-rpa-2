@@ -8,6 +8,7 @@ from rpa_pre_lista.domain.models import PreLista, RejectReason, SourceItem
 from rpa_pre_lista.errors import TargetWriteError
 
 GOOD_CNPJ = "11.111.111/0001-11"
+KITCHEN = 1
 
 
 def make_item(item_id, cnpj=GOOD_CNPJ, product="Arroz", qty=3):
@@ -26,7 +27,7 @@ class FakeSource:
 
 class FakeTarget:
     def __init__(self, done=(), fail_on=()):
-        self.catalog = Catalog({"11111111000111": 1}, {"arroz": (10,)}, frozenset())
+        self.catalog = Catalog({"11111111000111": 1}, {"arroz": (10,)}, frozenset(), frozenset({1}))
         self.done = set(done)
         self.fail_on = set(fail_on)
         self.saved = []
@@ -45,12 +46,12 @@ class FakeTarget:
 
 
 def good_list(id_pre_lista, day=1):
-    return PreLista(id_pre_lista, date(2025, 3, day), [make_item(id_pre_lista * 10)])
+    return PreLista(id_pre_lista, date(2025, 3, day), [make_item(id_pre_lista * 10)], KITCHEN)
 
 
 def mixed_list(id_pre_lista):
     items = [make_item(1), make_item(2, cnpj="00.000.000/0000-00")]
-    return PreLista(id_pre_lista, date(2025, 3, 1), items)
+    return PreLista(id_pre_lista, date(2025, 3, 1), items, KITCHEN)
 
 
 def test_imports_every_valid_list():
@@ -117,7 +118,9 @@ def test_write_failure_is_counted_and_does_not_stop_the_run():
 
 @pytest.mark.parametrize("allow_partial", [False, True])
 def test_list_with_no_valid_item_is_never_saved(allow_partial):
-    only_bad = PreLista(1, date(2025, 3, 1), [make_item(1, cnpj="00.000.000/0000-00")])
+    only_bad = PreLista(
+        1, date(2025, 3, 1), [make_item(1, cnpj="00.000.000/0000-00")], KITCHEN
+    )
     target = FakeTarget()
     summary = ImportPreListas(FakeSource([only_bad]), target, allow_partial=allow_partial).execute()
 
@@ -131,3 +134,19 @@ def test_each_rejection_is_logged_with_ids_and_reason_only(caplog):
     line = next(m for m in caplog.messages if "rejeitado" in m)
     assert line == "Pré-lista #5, item #2 rejeitado: SUPPLIER_NOT_FOUND"
     assert "00.000.000" not in caplog.text  # nada de CNPJ no log (o repositório é público)
+
+
+@pytest.mark.parametrize("id_kitchen", [None, 99])
+def test_list_with_missing_or_unknown_kitchen_is_skipped_and_reported(id_kitchen):
+    pre_lista = PreLista(1, date(2025, 3, 1), [make_item(1)], id_kitchen)
+    target = FakeTarget()
+    summary = ImportPreListas(FakeSource([pre_lista]), target, allow_partial=True).execute()
+
+    assert target.saved == [] and summary.lists_skipped == 1
+    (rejection,) = summary.rejections
+    assert (rejection.id_pre_lista, rejection.item, rejection.reason) == (
+        1,
+        None,
+        RejectReason.KITCHEN_NOT_FOUND,
+    )
+    assert "Itens rejeitados:       0" in summary.lines()  # a lista inteira foi rejeitada, não um item

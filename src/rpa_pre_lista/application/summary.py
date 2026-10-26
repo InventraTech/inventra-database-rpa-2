@@ -20,6 +20,6 @@ class ImportSummary:
             f"Pré-listas ignoradas:   {self.lists_skipped}",
             f"Pré-listas com erro:    {self.lists_failed}",
             f"Itens importados:       {self.items_imported}",
-            f"Itens rejeitados:       {len(self.rejections)}",
+            f"Itens rejeitados:       {sum(1 for r in self.rejections if r.item)}",
             f"Tempo:                  {self.elapsed_seconds:.2f}s",
         ]

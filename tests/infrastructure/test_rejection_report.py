@@ -18,3 +18,11 @@ def test_writes_one_row_per_rejection(tmp_path):
     with path.open(encoding="utf-8-sig", newline="") as fh:
         rows = list(csv.reader(fh, delimiter=";"))
     assert rows[1] == ["12", "40", "12.345.678/0001-90", "Forn", "Sal", "2", "PRODUCT_NOT_FOUND"]
+
+
+def test_list_level_rejection_leaves_item_columns_empty(tmp_path):
+    path = write_rejections(tmp_path, [Rejection(7, None, RejectReason.KITCHEN_NOT_FOUND)])
+
+    with path.open(encoding="utf-8-sig", newline="") as fh:
+        rows = list(csv.reader(fh, delimiter=";"))
+    assert rows[1] == ["7", "", "", "", "", "", "KITCHEN_NOT_FOUND"]

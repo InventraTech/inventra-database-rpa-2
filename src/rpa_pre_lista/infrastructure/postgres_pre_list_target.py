@@ -15,7 +15,7 @@ class PostgresPreListTarget:
     """Grava as pré-listas no banco do Inventra (tb_pre_list e tb_pre_list_item).
 
     O id da pré-lista no 1º ano fica em tb_pre_list.id_source (único): é o que torna a carga
-    idempotente.
+    idempotente. A cozinha vem de pre_lista.id_kitchen, coluna que o 1º ano acrescentou no banco deles.
     A conexão deve estar em autocommit: cada `save` abre a própria transação.
     """
 
@@ -47,7 +47,8 @@ class PostgresPreListTarget:
         links = frozenset(
             self._conn.execute("SELECT id_product, id_supplier FROM tb_product_supplier").fetchall()
         )
-        return Catalog(suppliers, {k: tuple(v) for k, v in products.items()}, links)
+        kitchens = frozenset(r[0] for r in self._conn.execute("SELECT id_kitchen FROM tb_kitchen"))
+        return Catalog(suppliers, {k: tuple(v) for k, v in products.items()}, links, kitchens)
 
     def imported_ids(self) -> set[int]:
         rows = self._conn.execute("SELECT id_source FROM tb_pre_list WHERE id_source IS NOT NULL")
@@ -57,9 +58,9 @@ class PostgresPreListTarget:
         try:
             with self._conn.transaction(force_rollback=self._dry_run), self._conn.cursor() as cur:
                 id_pre_list = cur.execute(
-                    "INSERT INTO tb_pre_list (list_date, id_source) VALUES (%s, %s) "
+                    "INSERT INTO tb_pre_list (list_date, id_source, id_kitchen) VALUES (%s, %s, %s) "
                     "RETURNING id_pre_list",
-                    (pre_lista.dt_lista, pre_lista.id_pre_lista),
+                    (pre_lista.dt_lista, pre_lista.id_pre_lista, pre_lista.id_kitchen),
                 ).fetchone()[0]
                 cur.executemany(
                     "INSERT INTO tb_pre_list_item "

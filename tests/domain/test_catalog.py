@@ -18,6 +18,7 @@ def catalog():
             "oleo": (300, 301),
         },
         product_suppliers=frozenset({(200, 10), (300, 10), (301, 20)}),
+        kitchens=frozenset({1}),
     )
 
 
@@ -32,6 +33,12 @@ def test_normalize_name_ignores_case_accents_and_spaces():
 
 def test_resolves_by_cnpj_and_normalized_name(catalog):
     assert catalog.resolve(item(product="  ARROZ  branco ")) == ResolvedItem(100, 10, 5)
+
+
+def test_has_kitchen(catalog):
+    assert catalog.has_kitchen(1)
+    assert not catalog.has_kitchen(2)
+    assert not catalog.has_kitchen(None)
 
 
 def test_unknown_supplier_is_rejected(catalog):

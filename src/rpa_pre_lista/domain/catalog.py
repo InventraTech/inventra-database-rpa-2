@@ -17,11 +17,15 @@ def normalize_name(value: str | None) -> str:
 
 @dataclass(frozen=True)
 class Catalog:
-    """Fornecedores e produtos do Inventra; traduz os itens do 1º ano para os ids do destino."""
+    """Fornecedores, produtos e cozinhas do Inventra; traduz os itens do 1º ano para os ids do destino."""
 
     suppliers: dict[str, int]
     products: dict[str, tuple[int, ...]]
     product_suppliers: frozenset[tuple[int, int]]
+    kitchens: frozenset[int]
+
+    def has_kitchen(self, id_kitchen: int | None) -> bool:
+        return id_kitchen in self.kitchens
 
     def resolve(self, item: SourceItem) -> ResolvedItem | RejectReason:
         id_supplier = self.suppliers.get(only_digits(item.supplier_cnpj))
