@@ -15,7 +15,7 @@ class PostgresPreListTarget:
     """Grava as pré-listas no banco do Inventra (tb_pre_list e tb_pre_list_item).
 
     O id da pré-lista no 1º ano fica em tb_pre_list.id_source (único): é o que torna a carga
-    idempotente. A cozinha vem de pre_lista.id_kitchen, coluna que o 1º ano acrescentou ao banco.
+    idempotente. A cozinha vem de pre_lista.id_cozinha, coluna que o 1º ano acrescentou ao banco.
     A conexão deve estar em autocommit: cada `save` abre a própria transação.
     """
 
