@@ -7,7 +7,7 @@ import psycopg
 from ..domain.models import PreLista, SourceItem
 
 _QUERY = """
-SELECT p.id_pre_lista, p.dt_lista, p.id_kitchen, i.id_item_lista,
+SELECT p.id_pre_lista, p.dt_lista, p.id_cozinha, i.id_item_lista,
        f.cnpj, f.nome_juridico, pr.nome, i.qtd
 FROM pre_lista p
 JOIN item_pre_lista i ON i.fk_pre_lista = p.id_pre_lista
